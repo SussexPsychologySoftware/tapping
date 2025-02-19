@@ -5,8 +5,8 @@ ctx.lineWidth = 5
 // Trial Setup
 const clockRadius = 140
 const trialLength = 6 * 1000 // seconds to ms
-const minDistance = 120 // degrees - should be time? must be < 180
-const maxDistance = 350
+const minDistance = 20 // degrees - should be time? must be < 180
+const maxDistance = 340
 let condition = 'external'
 // Trial references
 let startAngle
