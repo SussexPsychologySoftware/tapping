@@ -112,20 +112,9 @@ function mod(n, m) {
     return ((n % m) + m) % m;
 }
 
-function calcEndAngle(startAngle) {
-    // Note this isn't right - only the clockwise direction matters
-    let randomAngle
-    let distance = 0
-    while(distance <= minDistance || distance >= maxDistance) {
-        randomAngle = randomAngle = Math.floor(Math.random() * 360)
-        distance = (randomAngle - startAngle + 360) % 360
-    }
-    return randomAngle
-}
-
 function startTrial(){
     startAngle = random(0,360)
-    endAngle = calcEndAngle(startAngle)
+    endAngle = (startAngle+random(minDistance,maxDistance))%360
     startTime = performance.now()
     // Get 50/50 condition
     if(Math.random() >= 0.5) condition = 'external'
