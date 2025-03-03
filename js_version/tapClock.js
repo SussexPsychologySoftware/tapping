@@ -58,8 +58,8 @@ function drawHand(angle, colour='black', startOffset=0, lineLength=clockRadius-2
 }
 
 function drawArrowhead(headLength, angle, circleMargin, colour, outwards=true){
-    const angleRads = deg2rads(angle)
     const center = clock.width / 2
+    const angleRads = deg2rads(angle)
     // arrow tip location
     const outlineMargin = 2
     const adjustedClockRadius = clockRadius+ (outwards ? -outlineMargin : outlineMargin)
