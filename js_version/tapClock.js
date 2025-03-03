@@ -6,7 +6,6 @@ ctx.lineWidth = 5
 const clockRadius = 140
 const trialLength = 6 * 1000 // seconds to ms
 const minDistance = 20 // degrees - should be time? must be < 180
-const maxDistance = 340
 let condition = 'external'
 // Trial references
 let startAngle
@@ -15,6 +14,7 @@ let intervalID
 // Participant vars
 let pressTime
 
+// ARCS ----
 function drawClockOutline(){
     const center = clock.width/2
     ctx.beginPath()
@@ -23,56 +23,8 @@ function drawClockOutline(){
     ctx.stroke()
 }
 
-function drawTarget(angle){
-    const center = clock.width / 2
-    const angleRads = deg2rads(angle)
-    const headLength = 10
-    const arrowLength = 30
-    // start
-    const xInner = center + Math.sin(angleRads) * (clockRadius+headLength*2)
-    const yInner = center - Math.cos(angleRads) * (clockRadius+headLength*2)
-    // end
-    const xOuter = xInner + Math.sin(angleRads) * arrowLength
-    const yOuter = yInner - Math.cos(angleRads) * arrowLength
-    // draw line
-    ctx.beginPath()
-    ctx.strokeStyle = 'red'
-    ctx.moveTo(xOuter, yOuter)
-    ctx.lineTo(xInner, yInner)
-    ctx.stroke()
-
-    const circleX = center + Math.sin(angleRads) * (clockRadius+3)
-    const circleY = center - Math.cos(angleRads) * (clockRadius+3)
-    ctx.beginPath()
-    ctx.fillStyle = 'red'
-    ctx.moveTo(circleX, circleY)
-    ctx.lineTo(xInner-Math.sin(angleRads - Math.PI/2)*headLength, yInner+Math.cos(angleRads - Math.PI/2)*headLength)
-    ctx.lineTo(xInner-Math.sin(angleRads + Math.PI/2)*headLength, yInner+Math.cos(angleRads + Math.PI/2)*headLength)
-    ctx.lineTo(circleX, circleY)
-    ctx.fill()
-}
-
-function getAngle(time){
-    const propTrialLeft = time/trialLength
-    return (propTrialLeft * 360 + startAngle) % 360 //361 stops clear circle on revolution
-}
-
 function deg2rads(deg){
     return (deg * Math.PI) / 180
-}
-
-function drawHand(angle, colour='black') {
-    const center = clock.width / 2
-    const handLength = clockRadius-20
-    const angleRads = deg2rads(angle)
-    const x = center + Math.sin(angleRads) * handLength
-    const y = center - Math.cos(angleRads) * handLength
-    ctx.beginPath()
-    ctx.strokeStyle = colour
-    ctx.moveTo(center, center)
-    ctx.lineTo(x, y)
-    ctx.stroke()
-    return [x, y]
 }
 
 function drawArc(angle){
@@ -86,40 +38,107 @@ function drawArc(angle){
     ctx.fill()
 }
 
-function stopClock(){
+// HAND DRAWING HELPERS ---
+function drawLine(x1,y1,x2,y2,color){
+    ctx.beginPath()
+    ctx.strokeStyle = color
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    ctx.stroke()
+}
+
+function drawHand(angle, colour='black', startOffset=0, lineLength=clockRadius-20){
+    const center = clock.width / 2
+    const angleRads = deg2rads(angle)
+    const x1 = center + Math.sin(angleRads) * startOffset
+    const y1 = center - Math.cos(angleRads) * startOffset
+    const x2 = x1 + Math.sin(angleRads) * lineLength
+    const y2 = y1 - Math.cos(angleRads) * lineLength
+    drawLine(x1,y1,x2,y2,colour)
+}
+
+function drawArrowhead(headLength, angle, circleMargin, colour, outwards=true){
+    const angleRads = deg2rads(angle)
+    const center = clock.width / 2
+    // arrow tip location
+    const outlineMargin = 2
+    const adjustedClockRadius = clockRadius+ (outwards ? -outlineMargin : outlineMargin)
+    const tipX = center + Math.sin(angleRads) * adjustedClockRadius
+    const tipY = center - Math.cos(angleRads) * adjustedClockRadius
+    // line end location
+    const lineX = center + Math.sin(angleRads) * circleMargin
+    const lineY = center - Math.cos(angleRads) * circleMargin
+    // Draw
+    ctx.beginPath()
+    ctx.fillStyle = colour
+    ctx.moveTo(tipX, tipY)
+    ctx.lineTo(lineX-Math.sin(angleRads - Math.PI/2)*headLength, lineY+Math.cos(angleRads - Math.PI/2)*headLength)
+    ctx.lineTo(lineX-Math.sin(angleRads + Math.PI/2)*headLength, lineY+Math.cos(angleRads + Math.PI/2)*headLength)
+    ctx.lineTo(tipX, tipY)
+    ctx.fill()
+}
+
+function drawArrow(angle, colour, outwards=true, length=0){
+    // consider length an optional parameter. inwards or outwards (default) is a bool for now
+    // draw line
+    const headLength = 10
+    let circleMargin
+    if(outwards){
+        circleMargin = clockRadius-(headLength*2)
+        drawHand(angle, colour, 0, circleMargin)
+    } else {
+        circleMargin = clockRadius+(headLength*2)
+        drawHand(angle, colour, circleMargin, length)
+    }
+    // draw arrowhead
+    drawArrowhead(headLength, angle, circleMargin, colour, outwards)
+}
+
+function getAngle(time){
+    const propTrialLeft = time/trialLength
+    return (propTrialLeft * 360 + startAngle) % 360 //361 stops clear circle on revolution
+}
+
+// DRAW TARGET AND RESPONSE LINES ---
+function drawResponse(){
+    const pressAngle = getAngle(pressTime)
+    drawArrow(pressAngle, 'blue')
+}
+
+function drawTarget(angle){
+    drawArrow(angle, 'red', false, 30)
+}
+
+// TRIAL FUNCTIONS
+function stopClock(){ // END
     if(intervalID){
         clearInterval(intervalID)
         intervalID = undefined
-        setTimeout(startTrial, 500)
+        setTimeout(startTrial, 500) // Inter-trial interval
     }
 }
 
-function drawClock(){
+function drawClock(){ // DURING
     ctx.clearRect(0,0,clock.width,clock.height)
     drawClockOutline()
     if(condition === 'external') drawTarget(endAngle)
     const currentTime = performance.now()-startTime
     // console.log(currentTime/1000)
     const angle = getAngle(currentTime)
-    // console.log(angle)
     drawHand(angle)
     drawArc(angle)
     if(pressTime) drawResponse()
-    if(currentTime >= trialLength) stopClock() // stops just short?
+    if(currentTime >= trialLength) stopClock()
 }
 
 function random(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function mod(n, m) {
-    return ((n % m) + m) % m;
-}
-
-function startTrial(){
+function startTrial(){ // START
     pressTime = undefined
     startAngle = random(0,360)
-    endAngle = (startAngle+random(minDistance,maxDistance))%360
+    endAngle = (startAngle+random(minDistance, 360-minDistance)) % 360
     startTime = performance.now()
     // Get 50/50 condition
     if(Math.random() >= 0.5) condition = 'external'
@@ -129,41 +148,11 @@ function startTrial(){
     document.addEventListener('keydown', keyListener)
 }
 
-function drawResponse(){
-    const center = clock.width / 2
-    const pressAngle = getAngle(pressTime)
-    const angleRads = deg2rads(pressAngle)
-    const headLength = 10
-    const arrowLength = 30
-    const adjustedClockRadius = clockRadius - 2
-    
-    // end
-    const headX = center + Math.sin(angleRads) * (adjustedClockRadius-(headLength*2))
-    const headY = center - Math.cos(angleRads) * (adjustedClockRadius-(headLength*2))
-    // draw line
-    ctx.beginPath()
-    ctx.strokeStyle = 'blue'
-    ctx.moveTo(center, center)
-    ctx.lineTo(headX, headY)
-    ctx.stroke()
-
-    // draw head
-    const circleX = center + Math.sin(angleRads) * adjustedClockRadius
-    const circleY = center - Math.cos(angleRads) * adjustedClockRadius
-    ctx.beginPath()
-    ctx.fillStyle = 'blue'
-    ctx.moveTo(circleX, circleY)
-    ctx.lineTo(headX-Math.sin(angleRads - Math.PI/2)*headLength, headY+Math.cos(angleRads - Math.PI/2)*headLength)
-    ctx.lineTo(headX-Math.sin(angleRads + Math.PI/2)*headLength, headY+Math.cos(angleRads + Math.PI/2)*headLength)
-    ctx.lineTo(circleX, circleY)
-    ctx.fill()
-}
-
 startTrial()
 function keyListener(e){
     if(e.key === ' '){
         pressTime = performance.now()-startTime
-        document.removeEventListener('keydown',keyListener)
+        document.removeEventListener('keydown', keyListener)
     }
 }
 

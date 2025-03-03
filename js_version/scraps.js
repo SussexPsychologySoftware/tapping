@@ -39,3 +39,7 @@ function calcEndAngle(startAngle){
     }
     return randomAngle
 }
+
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
