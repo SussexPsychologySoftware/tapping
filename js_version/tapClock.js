@@ -12,10 +12,13 @@ let condition = 'external'
 let startAngle
 let startTime
 let intervalID
+// Participant vars
+let pressTime
 
 function drawClockOutline(){
     const center = clock.width/2
     ctx.beginPath()
+    ctx.strokeStyle = 'black'
     ctx.arc(center, center, clockRadius, 0, 2 * Math.PI)
     ctx.stroke()
 }
@@ -101,6 +104,7 @@ function drawClock(){
     // console.log(angle)
     drawHand(angle)
     drawArc(angle)
+    if(pressTime) drawResponse()
     if(currentTime >= trialLength) stopClock() // stops just short?
 }
 
@@ -113,6 +117,7 @@ function mod(n, m) {
 }
 
 function startTrial(){
+    pressTime = undefined
     startAngle = random(0,360)
     endAngle = (startAngle+random(minDistance,maxDistance))%360
     startTime = performance.now()
@@ -121,11 +126,44 @@ function startTrial(){
     else condition = 'internal'
     drawClock()
     intervalID = setInterval(drawClock, 17)
+    document.addEventListener('keydown', keyListener)
 }
 
-function keyListener(e){
-    if(e.key === ' ') stopClock()
+function drawResponse(){
+    const center = clock.width / 2
+    const pressAngle = getAngle(pressTime)
+    const angleRads = deg2rads(pressAngle)
+    const headLength = 10
+    const arrowLength = 30
+    const adjustedClockRadius = clockRadius - 2
+    
+    // end
+    const headX = center + Math.sin(angleRads) * (adjustedClockRadius-(headLength*2))
+    const headY = center - Math.cos(angleRads) * (adjustedClockRadius-(headLength*2))
+    // draw line
+    ctx.beginPath()
+    ctx.strokeStyle = 'blue'
+    ctx.moveTo(center, center)
+    ctx.lineTo(headX, headY)
+    ctx.stroke()
+
+    // draw head
+    const circleX = center + Math.sin(angleRads) * adjustedClockRadius
+    const circleY = center - Math.cos(angleRads) * adjustedClockRadius
+    ctx.beginPath()
+    ctx.fillStyle = 'blue'
+    ctx.moveTo(circleX, circleY)
+    ctx.lineTo(headX-Math.sin(angleRads - Math.PI/2)*headLength, headY+Math.cos(angleRads - Math.PI/2)*headLength)
+    ctx.lineTo(headX-Math.sin(angleRads + Math.PI/2)*headLength, headY+Math.cos(angleRads + Math.PI/2)*headLength)
+    ctx.lineTo(circleX, circleY)
+    ctx.fill()
 }
 
 startTrial()
-document.addEventListener('keydown', keyListener)
+function keyListener(e){
+    if(e.key === ' '){
+        pressTime = performance.now()-startTime
+        document.removeEventListener('keydown',keyListener)
+    }
+}
+
