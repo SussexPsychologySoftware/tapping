@@ -7,9 +7,11 @@ let ctx
 const clockRadius = 140
 const trialLength = 6 * 1000 // seconds to ms
 const minDistance = 20 // degrees - should be time? must be < 180
-let condition = 'external'
 // Trial references
 let startAngle
+let endAngle
+let condition
+// timers
 let startTime
 let intervalID
 // Participant vars
@@ -136,17 +138,17 @@ function random(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function startTrial(c){ // START
+function startTrial(c,startAngle){ // START
+    console.log(startAngle)
     clock = c
-    ctx = clock.getContext('2d')
+    ctx = c.getContext('2d')
     ctx.lineWidth = 5
     pressTime = undefined
     startAngle = random(0,360)
     endAngle = (startAngle+random(minDistance, 360-minDistance)) % 360
+    condition = Math.random() >= 0.5 ?  'external' : 'internal'
+
     startTime = performance.now()
-    // Get 50/50 condition
-    if(Math.random() >= 0.5) condition = 'external'
-    else condition = 'internal'
     drawClock()
     intervalID = setInterval(drawClock, 17)
     document.addEventListener('keydown', keyListener)
@@ -162,10 +164,13 @@ function keyListener(e){
 // JSPSYCH ------------------------------
 //https://github.com/jspsych/jsPsych/discussions/1690
 const jsPsych = initJsPsych({
+    on_trial_finish: function(data) {
+        console.log(JSON.stringify(data));
+    },
     on_finish: function() {
       jsPsych.data.displayData();
     }
-});
+})
 
 function createTimelineVariables(){
     const nTrials = 10
@@ -178,20 +183,32 @@ function createTimelineVariables(){
         }
         timelineVars.push(trialVars)
     }
+    return timelineVars
 }
+
 const trial = {
     type: jsPsychCanvasKeyboardResponse,
     trial_duration: trialLength,
     response_ends_trial: false,
-    stimulus: startTrial,
+    stimulus: function(canvas) {
+        startAngle = jsPsych.timelineVariable('startAngle')
+        endAngle = jsPsych.timelineVariable('endAngle')
+        condition = jsPsych.timelineVariable('condition')
+        startTrial(canvas);
+    },
     choices: [' '],
     prompt: "<p>Press spacebar</p>",
-    on_load: function(){
+    on_finish: function(data){
+        // merge all timeline variables for this trial into the trial data
+        Object.assign(data, jsPsych.allTimelineVariables());
+    },
+}
 
-        startTrial(jsPsych.timelineVariable('startAngle'),jsPsych.timelineVariable('endAngle'),jsPsych.timelineVariable('condition'))
-    }
-};
+const procedure = {
+    timeline: [trial],
+    timeline_variables: createTimelineVariables()
+}
 
-const timeline = [];
-timeline.push(trial);
+const timeline = []
+timeline.push(procedure);
 jsPsych.run(timeline);
