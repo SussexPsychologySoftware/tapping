@@ -16,7 +16,9 @@ let condition
 // Clock parameters
 const clockRadius = 140
 const trialLength = 6 * 1000 // seconds to ms
-const minDistance = 20 // buffer around starting angle of timer
+// // constants
+const TWO_PI = Math.PI * 2
+const minDistance = (20 / 360) * TWO_PI // buffer on end angle
 
 // ARCS ----
 function drawClockOutline(){
@@ -31,13 +33,17 @@ function deg2rads(deg){
     return (deg * Math.PI) / 180
 }
 
+function radsToDeg(rad) {
+    return (rad * 180) / Math.PI
+}
+
 function drawArc(angle){
     const center = clock.width/2
     const handLength = clockRadius-20
     ctx.beginPath()
     ctx.fillStyle = 'green'
     ctx.moveTo(center, center)
-    ctx.arc(center, center, handLength, deg2rads(startAngle-90), deg2rads(angle-90))
+    ctx.arc(center, center, handLength, startAngle - Math.PI/2, angle - Math.PI/2)
     ctx.lineTo(center, center)
     ctx.fill()
 }
@@ -51,33 +57,46 @@ function drawLine(x1,y1,x2,y2,color){
     ctx.stroke()
 }
 
-function drawHand(angle, colour='black', startOffset=0, lineLength=clockRadius-20){
+function drawHand(angle, colour='black', startOffset=0, lineLength=clockRadius-20) {
     const center = clock.width / 2
-    const angleRads = deg2rads(angle)
-    const x1 = center + Math.sin(angleRads) * startOffset
-    const y1 = center - Math.cos(angleRads) * startOffset
-    const x2 = x1 + Math.sin(angleRads) * lineLength
-    const y2 = y1 - Math.cos(angleRads) * lineLength
-    drawLine(x1,y1,x2,y2,colour)
+    const x1 = center + Math.sin(angle) * startOffset
+    const y1 = center - Math.cos(angle) * startOffset
+    const x2 = x1 + Math.sin(angle) * lineLength
+    const y2 = y1 - Math.cos(angle) * lineLength
+    drawLine(x1, y1, x2, y2, colour)
 }
 
-function drawArrowhead(headLength, angle, circleMargin, colour, outwards=true){
+function drawArrowhead(headLength, angle, circleMargin, colour, outwards=true) {
     const center = clock.width / 2
-    const angleRads = deg2rads(angle)
-    // arrow tip location
+    // Using angle directly as radians
+    
+    // Arrow tip location
     const outlineMargin = 2
-    const adjustedClockRadius = clockRadius+ (outwards ? -outlineMargin : outlineMargin)
-    const tipX = center + Math.sin(angleRads) * adjustedClockRadius
-    const tipY = center - Math.cos(angleRads) * adjustedClockRadius
-    // line end location
-    const lineX = center + Math.sin(angleRads) * circleMargin
-    const lineY = center - Math.cos(angleRads) * circleMargin
+    const adjustedClockRadius = clockRadius + (outwards ? -outlineMargin : outlineMargin)
+    const tipX = center + Math.sin(angle) * adjustedClockRadius
+    const tipY = center - Math.cos(angle) * adjustedClockRadius
+    
+    // Line end location
+    const lineX = center + Math.sin(angle) * circleMargin
+    const lineY = center - Math.cos(angle) * circleMargin
+    
     // Draw
     ctx.beginPath()
     ctx.fillStyle = colour
     ctx.moveTo(tipX, tipY)
-    ctx.lineTo(lineX-Math.sin(angleRads - Math.PI/2)*headLength, lineY+Math.cos(angleRads - Math.PI/2)*headLength)
-    ctx.lineTo(lineX-Math.sin(angleRads + Math.PI/2)*headLength, lineY+Math.cos(angleRads + Math.PI/2)*headLength)
+    
+    // Left side of arrowhead - subtract PI/2 (90 degrees) instead of Math.PI/2
+    ctx.lineTo(
+        lineX - Math.sin(angle - Math.PI/2) * headLength, 
+        lineY + Math.cos(angle - Math.PI/2) * headLength
+    )
+    
+    // Right side of arrowhead - add PI/2 (90 degrees) instead of Math.PI/2
+    ctx.lineTo(
+        lineX - Math.sin(angle + Math.PI/2) * headLength, 
+        lineY + Math.cos(angle + Math.PI/2) * headLength
+    )
+    
     ctx.lineTo(tipX, tipY)
     ctx.fill()
 }
@@ -99,8 +118,8 @@ function drawArrow(angle, colour, outwards=true, length=0){
 }
 
 function getAngle(time){
-    const propTrialLeft = time/trialLength
-    return (propTrialLeft * 360 + startAngle) % 360 //361 stops clear circle on revolution
+    const propTrialLeft = time / trialLength
+    return (propTrialLeft * TWO_PI + startAngle) % TWO_PI
 }
 
 // DRAW TARGET AND RESPONSE LINES ---
@@ -176,15 +195,18 @@ const jsPsych = initJsPsych({
     }
 })
 
-function createTimelineVariables(){
+function createTimelineVariables() {
     const nTrials = 10
     const timelineVars = []
-    for(let i=0; i<nTrials; i++){
-        const startAngle = random(0,360)
-
+    for(let i=0; i<nTrials; i++) {
+        // Generate random angles in radians
+        const startRads = (random(0, 359) / 360) * TWO_PI
+        // Calculate end angle ensuring minimum distance
+        const distanceRad = (random(Math.floor(minDistance * 100), Math.floor(TWO_PI - minDistance * 100)) / 100)
+        // timeline vars
         const trialVars = {
-            startAngle: startAngle,
-            endAngle: (startAngle+random(minDistance, 360-minDistance)) % 360,
+            startAngle: startRads,
+            endAngle: (startRads + distanceRad) % TWO_PI,
             condition: Math.random() >= 0.5 ? 'external': 'internal'
         }
         timelineVars.push(trialVars)
