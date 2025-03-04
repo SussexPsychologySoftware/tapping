@@ -6,7 +6,7 @@ let clock
 let ctx
 // timers
 let startTime
-let intervalID
+let animationID;
 // Participant vars
 let pressTime
 // Trial parameters (timeline vars)
@@ -114,14 +114,6 @@ function drawTarget(angle){
 }
 
 // TRIAL FUNCTIONS
-function stopClock(){ // END
-    if(intervalID){
-        clearInterval(intervalID)
-        intervalID = undefined
-        //setTimeout(startTrial, 500) // Inter-trial interval
-    }
-}
-
 function drawClock(){ // DURING
     ctx.clearRect(0,0,clock.width,clock.height)
     drawClockOutline()
@@ -135,6 +127,22 @@ function drawClock(){ // DURING
     if(currentTime >= trialLength) stopClock()
 }
 
+function stopClock() {
+    if (animationID) {
+        cancelAnimationFrame(animationID);
+        animationID = undefined;
+    }
+}
+
+function animateClock() {
+    drawClock();
+    if (performance.now() - startTime < trialLength) {
+        animationID = requestAnimationFrame(animateClock);
+    } else {
+        stopClock();
+    }
+}
+
 function random(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -146,7 +154,7 @@ function startTrial(c){ // START
     pressTime = undefined
     startTime = performance.now()
     drawClock()
-    intervalID = setInterval(drawClock, 17)
+    animationID = requestAnimationFrame(animateClock);
     document.addEventListener('keydown', keyListener)
 }
 
