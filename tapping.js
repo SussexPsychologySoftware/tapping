@@ -202,15 +202,6 @@ function createTimelineVariables() {
     return timelineVars
 }
 
-function rads2Time(angle) {
-    let adjustedAngle = (angle - startAngle) % TWO_PI
-    if (adjustedAngle < 0) adjustedAngle += TWO_PI // Handle negatives
-    // Convert from radians to proportion of trial
-    const propTrialLeft = adjustedAngle / TWO_PI
-    // Convert proportion to actual time
-    return propTrialLeft * trialLength
-}
-
 const trial = {
     type: jsPsychCanvasKeyboardResponse,
     trial_duration: trialLength,
@@ -224,8 +215,8 @@ const trial = {
     choices: [' '],
     prompt: "<p>Press spacebar</p>",
     on_finish: function(data){
-        data.pressTime = pressTime // Absolute time use pressed spacebar
-        data.pressAngle = time2Rads(pressTime) // Where user pressed spacebar in radians
+        data.pressTime = pressTime // Time user pressed spacebar - same as RT
+        data.pressAngle = time2Rads(pressTime) // Where user pressed spacebar in radians, relative to 12'clock = 0
     }
 }
 
