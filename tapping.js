@@ -11,7 +11,7 @@ let animationID;
 let pressTime
 // Trial parameters (timeline vars)
 let startAngle
-let endAngle
+let targetAngle
 let condition
 // Clock parameters
 const clockRadius = 140
@@ -128,7 +128,7 @@ function drawTarget(angle){
 function drawClock(){ // DURING
     ctx.clearRect(0,0,clock.width,clock.height)
     drawClockOutline()
-    if(condition === 'external') drawTarget(endAngle)
+    if(condition === 'external') drawTarget(targetAngle)
     const currentTime = performance.now()-startTime
     // console.log(currentTime/1000)
     const angle = time2Rads(currentTime)
@@ -194,7 +194,7 @@ function createTimelineVariables() {
         // timeline vars
         const trialVars = {
             startAngle: startAngle,
-            endAngle: (startAngle + distanceRad) % TWO_PI,
+            targetAngle: (startAngle + distanceRad) % TWO_PI,
             condition: Math.random() >= 0.5 ? 'external': 'internal'
         }
         timelineVars.push(trialVars)
@@ -217,7 +217,7 @@ const trial = {
     response_ends_trial: false,
     stimulus: function(canvas) {
         startAngle = jsPsych.evaluateTimelineVariable('startAngle')
-        endAngle = jsPsych.evaluateTimelineVariable('endAngle')
+        targetAngle = jsPsych.evaluateTimelineVariable('targetAngle')
         condition = jsPsych.evaluateTimelineVariable('condition')
         startTrial(canvas)
     },
