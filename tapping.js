@@ -18,7 +18,7 @@ const clockRadius = 140
 const trialLength = 6 * 1000 // seconds to ms
 // // constants
 const TWO_PI = Math.PI * 2
-const minDistance = (20 / 360) * TWO_PI // buffer on end angle
+const minDistance = .5 // buffer on end angle in Radians
 
 // ARCS ----
 function drawClockOutline(){
@@ -27,14 +27,6 @@ function drawClockOutline(){
     ctx.strokeStyle = 'black'
     ctx.arc(center, center, clockRadius, 0, 2 * Math.PI)
     ctx.stroke()
-}
-
-function deg2rads(deg){
-    return (deg * Math.PI) / 180
-}
-
-function radsToDeg(rad) {
-    return (rad * 180) / Math.PI
 }
 
 function drawArc(angle){
@@ -117,14 +109,14 @@ function drawArrow(angle, colour, outwards=true, length=0){
     drawArrowhead(headLength, angle, circleMargin, colour, outwards)
 }
 
-function getAngle(time){
+function time2Rads(time){
     const propTrialLeft = time / trialLength
     return (propTrialLeft * TWO_PI + startAngle) % TWO_PI
 }
 
 // DRAW TARGET AND RESPONSE LINES ---
 function drawResponse(){
-    const pressAngle = getAngle(pressTime)
+    const pressAngle = time2Rads(pressTime)
     drawArrow(pressAngle, 'blue')
 }
 
@@ -139,7 +131,7 @@ function drawClock(){ // DURING
     if(condition === 'external') drawTarget(endAngle)
     const currentTime = performance.now()-startTime
     // console.log(currentTime/1000)
-    const angle = getAngle(currentTime)
+    const angle = time2Rads(currentTime)
     drawHand(angle)
     drawArc(angle)
     if(pressTime) drawResponse()
@@ -160,10 +152,6 @@ function animateClock() {
     } else {
         stopClock();
     }
-}
-
-function random(min, max){
-    return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 function startTrial(c){ // START
@@ -200,18 +188,27 @@ function createTimelineVariables() {
     const timelineVars = []
     for(let i=0; i<nTrials; i++) {
         // Generate random angles in radians
-        const startRads = (random(0, 359) / 360) * TWO_PI
+        const startAngle = Math.random() * TWO_PI
         // Calculate end angle ensuring minimum distance
-        const distanceRad = (random(Math.floor(minDistance * 100), Math.floor(TWO_PI - minDistance * 100)) / 100)
+        const distanceRad = minDistance + Math.random() * (TWO_PI - minDistance)
         // timeline vars
         const trialVars = {
-            startAngle: startRads,
-            endAngle: (startRads + distanceRad) % TWO_PI,
+            startAngle: startAngle,
+            endAngle: (startAngle + distanceRad) % TWO_PI,
             condition: Math.random() >= 0.5 ? 'external': 'internal'
         }
         timelineVars.push(trialVars)
     }
     return timelineVars
+}
+
+function rads2Time(angle) {
+    let adjustedAngle = (angle - startAngle) % TWO_PI
+    if (adjustedAngle < 0) adjustedAngle += TWO_PI // Handle negatives
+    // Convert from radians to proportion of trial
+    const propTrialLeft = adjustedAngle / TWO_PI
+    // Convert proportion to actual time
+    return propTrialLeft * trialLength
 }
 
 const trial = {
@@ -222,12 +219,13 @@ const trial = {
         startAngle = jsPsych.evaluateTimelineVariable('startAngle')
         endAngle = jsPsych.evaluateTimelineVariable('endAngle')
         condition = jsPsych.evaluateTimelineVariable('condition')
-        startTrial(canvas);
+        startTrial(canvas)
     },
     choices: [' '],
     prompt: "<p>Press spacebar</p>",
     on_finish: function(data){
-        data.pressTime = pressTime;
+        data.pressTime = pressTime // Absolute time use pressed spacebar
+        data.pressAngle = time2Rads(pressTime) // Where user pressed spacebar in radians
     }
 }
 
