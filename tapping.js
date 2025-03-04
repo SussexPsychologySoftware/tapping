@@ -1,21 +1,22 @@
 // JS CODE -----------------------------------------
-// Canvas
+// Globals for easier access
 
-// Trial Setup
-let clock // Assign canvas element to this on trial start
+// Canvas
+let clock
 let ctx
-const clockRadius = 140
-const trialLength = 6 * 1000 // seconds to ms
-const minDistance = 20 // degrees - should be time? must be < 180
-// Trial references
-let startAngle
-let endAngle
-let condition
 // timers
 let startTime
 let intervalID
 // Participant vars
 let pressTime
+// Trial parameters (timeline vars)
+let startAngle
+let endAngle
+let condition
+// Clock parameters
+const clockRadius = 140
+const trialLength = 6 * 1000 // seconds to ms
+const minDistance = 20 // buffer around starting angle of timer
 
 // ARCS ----
 function drawClockOutline(){
@@ -138,16 +139,11 @@ function random(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function startTrial(c,startAngle){ // START
-    console.log(startAngle)
+function startTrial(c){ // START
     clock = c
     ctx = c.getContext('2d')
     ctx.lineWidth = 5
     pressTime = undefined
-    startAngle = random(0,360)
-    endAngle = (startAngle+random(minDistance, 360-minDistance)) % 360
-    condition = Math.random() >= 0.5 ?  'external' : 'internal'
-
     startTime = performance.now()
     drawClock()
     intervalID = setInterval(drawClock, 17)
@@ -176,8 +172,10 @@ function createTimelineVariables(){
     const nTrials = 10
     const timelineVars = []
     for(let i=0; i<nTrials; i++){
+        const startAngle = random(0,360)
+
         const trialVars = {
-            startAngle: random(0,360),
+            startAngle: startAngle,
             endAngle: (startAngle+random(minDistance, 360-minDistance)) % 360,
             condition: Math.random() >= 0.5 ? 'external': 'internal'
         }
@@ -191,22 +189,22 @@ const trial = {
     trial_duration: trialLength,
     response_ends_trial: false,
     stimulus: function(canvas) {
-        startAngle = jsPsych.timelineVariable('startAngle')
-        endAngle = jsPsych.timelineVariable('endAngle')
-        condition = jsPsych.timelineVariable('condition')
+        startAngle = jsPsych.evaluateTimelineVariable('startAngle')
+        endAngle = jsPsych.evaluateTimelineVariable('endAngle')
+        condition = jsPsych.evaluateTimelineVariable('condition')
         startTrial(canvas);
     },
     choices: [' '],
     prompt: "<p>Press spacebar</p>",
     on_finish: function(data){
-        // merge all timeline variables for this trial into the trial data
-        Object.assign(data, jsPsych.allTimelineVariables());
-    },
+        data.pressTime = pressTime;
+    }
 }
 
 const procedure = {
     timeline: [trial],
-    timeline_variables: createTimelineVariables()
+    timeline_variables: createTimelineVariables(),
+    save_timeline_variables: true
 }
 
 const timeline = []
