@@ -206,6 +206,15 @@ const ctap_trial = {
     },
 }
 
+const jsPsych = initJsPsych({
+    on_trial_finish: function(data) {
+        console.log(JSON.stringify(data));
+    },
+    on_finish: function() {
+      jsPsych.data.displayData();
+    }
+})
+
 const procedure = {
     timeline: [ctap_trial],
     timeline_variables: ctap_maketrials(),
