@@ -10,6 +10,8 @@ let ctap_pressTime
 let ctap_animationID
 const TWO_PI = Math.PI * 2
 
+
+let trial_number = 0
 // Drawing ========================================
 function drawClockOutline(clockRadius = 140) {
     const center = clock.width / 2
@@ -106,7 +108,8 @@ function drawClock(condition = "external", start_angle = 0, target_angle = 0, du
     // DURING
     ctx.clearRect(0, 0, clock.width, clock.height)
     drawClockOutline(radius) // clockRadius is a function of window height
-
+    ctx.font = "15px Arial";
+    ctx.fillText(String(trial_number),10,80);
     // Hands
     const currentTime = performance.now() - ctap_startTime
     const angle = time2Rads(currentTime, duration, start_angle)
@@ -130,7 +133,7 @@ function stopClock() {
 
 function animateClock(condition, start_angle, target_angle, duration, difficulty) {
     drawClock(condition, start_angle, target_angle, duration, difficulty)
-    if (performance.now() - ctap_startTime < duration) {
+    if (ctap_animationID && performance.now() - ctap_startTime < duration) { // Check if we still want another frame first, allows StopClock to cancel the animation
         ctap_animationID = requestAnimationFrame(function() {animateClock(condition, start_angle, target_angle, duration, difficulty)})
     } else {
         stopClock()
@@ -145,7 +148,7 @@ function ctap_stimulus(c, condition = "external", start_angle = 0, target_angle 
     ctx.lineWidth = 5
     ctap_pressTime = undefined
     ctap_startTime = performance.now()
-    drawClock(condition, start_angle, target_angle, duration, difficulty)
+    // drawClock(condition, start_angle, target_angle, duration, difficulty) // This doesn't need to be called here, as it will be called in the animation loop
     ctap_animationID = requestAnimationFrame(function() {animateClock(condition, start_angle, target_angle, duration, difficulty)})
     document.addEventListener("keydown", ctap_keyListener)
 }
@@ -209,6 +212,7 @@ const ctap_trial = {
 const jsPsych = initJsPsych({
     on_trial_finish: function(data) {
         console.log(JSON.stringify(data));
+        trial_number++
     },
     on_finish: function() {
       jsPsych.data.displayData();
