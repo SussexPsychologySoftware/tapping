@@ -204,6 +204,7 @@ const ctap_trial = {
     choices: [" "],
     prompt: "",
     on_finish: function (data) {
+        stopClock()
         data.response_time = ctap_pressTime // Time user pressed spacebar - same as RT
         data.response_angle = time2Rads(ctap_pressTime, jsPsych.evaluateTimelineVariable("duration"), jsPsych.evaluateTimelineVariable("start_angle")) // Where user pressed spacebar in radians, relative to 12'clock = 0
     },
