@@ -121,7 +121,6 @@ function drawClock(condition = "external", start_angle = 0, target_angle = 0, du
     if (condition === "external") drawArrow(target_angle, "red", false, radius, radius * 0.4, radius * 0.05)
 
     drawCenterDot() // Draw the center dot
-    if (currentTime >= duration) stopClock()
 }
 
 function stopClock() {
@@ -135,8 +134,6 @@ function animateClock(condition, start_angle, target_angle, duration, difficulty
     drawClock(condition, start_angle, target_angle, duration, difficulty)
     if (ctap_animationID && performance.now() - ctap_startTime < duration) { // Check if we still want another frame first, allows StopClock to cancel the animation
         ctap_animationID = requestAnimationFrame(function() {animateClock(condition, start_angle, target_angle, duration, difficulty)})
-    } else {
-        stopClock()
     }
 }
 
@@ -204,7 +201,7 @@ const ctap_trial = {
     choices: [" "],
     prompt: "",
     on_finish: function (data) {
-        stopClock()
+        stopClock() // Stop the clock animation, should be called at the right time if our clock is correctly set up
         data.response_time = ctap_pressTime // Time user pressed spacebar - same as RT
         data.response_angle = time2Rads(ctap_pressTime, jsPsych.evaluateTimelineVariable("duration"), jsPsych.evaluateTimelineVariable("start_angle")) // Where user pressed spacebar in radians, relative to 12'clock = 0
     },
