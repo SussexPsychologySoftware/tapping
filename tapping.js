@@ -144,7 +144,6 @@ function ctap_stimulus(c, condition = "external", start_angle = 0, target_angle 
     ctx = c.getContext("2d")
     ctx.lineWidth = 5
     ctap_pressTime = undefined
-    ctap_startTime = performance.now()
     // drawClock(condition, start_angle, target_angle, duration, difficulty) // This doesn't need to be called here, as it will be called in the animation loop
     ctap_animationID = requestAnimationFrame(function() {animateClock(condition, start_angle, target_angle, duration, difficulty)})
     document.addEventListener("keydown", ctap_keyListener)
@@ -200,6 +199,9 @@ const ctap_trial = {
     },
     choices: [" "],
     prompt: "",
+    on_load: function () { //or on_start?? on_load used here: https://github.com/jspsych/jsPsych/discussions/1690
+        ctap_startTime = performance.now()
+    },
     on_finish: function (data) {
         stopClock() // Stop the clock animation, should be called at the right time if our clock is correctly set up
         data.response_time = ctap_pressTime // Time user pressed spacebar - same as RT
