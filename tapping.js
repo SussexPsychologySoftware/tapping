@@ -157,8 +157,10 @@ function ctap_keyListener(e) {
 }
 
 function ctap_maketrials(nTrials = 10, condition = "external") {
-    var trials = []
-    var min_distance = 0.5 // buffer on end angle in percentage
+    const trials = [] // Stop using var ffs
+    const min_distance = 0.5 // buffer on end angle in percentage
+    const min_trial_duration = 4 * 1000
+    const max_trial_duration = 6 * 1000
     for (let i = 0; i < nTrials; i++) {
         // Generate random angles in radians
         let start_angle = Math.random() * TWO_PI
@@ -172,7 +174,8 @@ function ctap_maketrials(nTrials = 10, condition = "external") {
             target_angle: start_angle + target_angle * TWO_PI,
             condition: condition,
             difficulty: Math.random() * (0.9 - 0.4) + 0.4, // The size of the clock arms relative to the radius
-            duration: (Math.random() * 2 + 4) * 1000, // random between 4 and 6 seconds
+            // random between min and max duration, +1 means max duration is included, floor means it is an integer so no more unneeded decimals
+            duration: Math.floor((Math.random() * (max_trial_duration - min_trial_duration+1) + min_trial_duration)),
         }
         trials.push(trial_info)
     }
